@@ -17,6 +17,7 @@ dependencies = [
 
 [project.scripts]
 music-genie = "music_genie.cli:app"
+mg = "music_genie.cli:app"
 
 [build-system]
 requires = ["hatchling"]
