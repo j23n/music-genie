@@ -1,9 +1,28 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Tuple, Type
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+
+
+def _xdg_music_dir() -> Path:
+    """Return the XDG music directory, falling back to ~/Music."""
+    # 1. Explicit environment variable
+    env = os.environ.get("XDG_MUSIC_DIR")
+    if env:
+        return Path(env)
+    # 2. Parse ~/.config/user-dirs.dirs (Linux/freedesktop standard)
+    user_dirs = Path.home() / ".config" / "user-dirs.dirs"
+    if user_dirs.exists():
+        for line in user_dirs.read_text().splitlines():
+            if line.startswith("XDG_MUSIC_DIR="):
+                val = line.split("=", 1)[1].strip().strip('"')
+                return Path(val.replace("$HOME", str(Path.home())))
+    # 3. Fallback
+    return Path.home() / "Music"
 
 
 class Settings(BaseSettings):
@@ -12,7 +31,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    output_dir: Path = Path.home() / "Music"
+    output_dir: Path = Field(default_factory=_xdg_music_dir)
     audio_format: str = "mp3"
     audio_quality: int = 192
     record_duration: int = 8
