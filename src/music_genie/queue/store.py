@@ -51,6 +51,21 @@ def list_all() -> list[dict]:
     return records
 
 
+def delete_snippet(snippet_id: str) -> bool:
+    """Delete the WAV and JSON files for a snippet. Returns True if found."""
+    sdir = snippets_dir()
+    for jf in sdir.glob("*.json"):
+        try:
+            data = json.loads(jf.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        if data.get("id") == snippet_id:
+            Path(data["wav_path"]).unlink(missing_ok=True)
+            jf.unlink(missing_ok=True)
+            return True
+    return False
+
+
 def update_snippet(snippet_id: str, **fields: object) -> dict | None:
     sdir = snippets_dir()
     for jf in sdir.glob("*.json"):

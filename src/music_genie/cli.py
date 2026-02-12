@@ -14,7 +14,7 @@ from music_genie.youtube.search import search_youtube
 from music_genie.youtube.download import download_audio
 from music_genie.audio.record import record_snippet
 from music_genie.audio.identify import is_online, identify_song_sync
-from music_genie.queue.store import save_snippet, list_pending, update_snippet
+from music_genie.queue.store import save_snippet, list_pending, update_snippet, delete_snippet
 from music_genie.ui.prompts import prompt_pick, prompt_confirm
 from music_genie.metadata.lookup import TrackMeta, mb_lookup, parse_video_title
 from music_genie.metadata.embed import embed
@@ -194,7 +194,10 @@ def process() -> None:
             meta = identify_song_sync(wav_path)
 
         if not meta:
-            console.print("[yellow]Could not identify this snippet. Skipping.[/yellow]")
+            console.print("[yellow]Could not identify this snippet.[/yellow]")
+            if prompt_confirm("Delete this snippet?"):
+                delete_snippet(record["id"])
+                console.print("[dim]Deleted.[/dim]")
             skipped_count += 1
             continue
 
