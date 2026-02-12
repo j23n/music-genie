@@ -7,7 +7,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-import imageio_ffmpeg
+import shutil
+
 from rich.console import Console
 from rich.live import Live
 from rich.text import Text
@@ -39,9 +40,22 @@ def _make_snippet_path() -> Path:
     return sdir / f"{stamp}_{uid}.wav"
 
 
+def _system_ffmpeg() -> str:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError(
+            "Recording requires a system ffmpeg (the bundled static binary cannot "
+            "access audio devices).\n"
+            "  Debian/Ubuntu:  sudo apt install ffmpeg\n"
+            "  macOS:          brew install ffmpeg\n"
+            "  Fedora:         sudo dnf install ffmpeg"
+        )
+    return ffmpeg
+
+
 def record_snippet(duration: int = 8, sample_rate: int = 44100) -> Path:
     out_path = _make_snippet_path()
-    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    ffmpeg = _system_ffmpeg()
 
     console.print(f"[bold cyan]Recording for {duration} seconds...[/bold cyan]")
 
