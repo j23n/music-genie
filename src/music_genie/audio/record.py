@@ -17,14 +17,18 @@ from music_genie.config import snippets_dir
 console = Console()
 
 
-def _input_args() -> list[str]:
-    """Return FFmpeg input arguments for the default microphone on each platform."""
+def _input_candidates() -> list[list[str]]:
+    """Return FFmpeg input arg lists to try, in preference order."""
     if sys.platform == "darwin":
-        return ["-f", "avfoundation", "-i", ":0"]
+        return [["-f", "avfoundation", "-i", ":0"]]
     elif sys.platform == "win32":
-        return ["-f", "dshow", "-i", "audio=default"]
+        return [["-f", "dshow", "-i", "audio=default"]]
     else:
-        return ["-f", "alsa", "-i", "default"]
+        # pulse works on PulseAudio and PipeWire; alsa as fallback
+        return [
+            ["-f", "pulse", "-i", "default"],
+            ["-f", "alsa", "-i", "default"],
+        ]
 
 
 def _make_snippet_path() -> Path:
@@ -39,39 +43,43 @@ def record_snippet(duration: int = 8, sample_rate: int = 44100) -> Path:
     out_path = _make_snippet_path()
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
 
-    cmd = [
-        ffmpeg,
-        *_input_args(),
-        "-t", str(duration),
-        "-ar", str(sample_rate),
-        "-ac", "1",
-        "-y",
-        str(out_path),
-    ]
-
     console.print(f"[bold cyan]Recording for {duration} seconds...[/bold cyan]")
 
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    last_stderr = b""
+    for input_args in _input_candidates():
+        cmd = [
+            ffmpeg,
+            *input_args,
+            "-t", str(duration),
+            "-ar", str(sample_rate),
+            "-ac", "1",
+            "-y",
+            str(out_path),
+        ]
 
-    with Live(console=console, refresh_per_second=4) as live:
-        start = time.time()
-        while True:
-            elapsed = time.time() - start
-            remaining = max(0.0, duration - elapsed)
-            filled = int((elapsed / duration) * 20)
-            bar = "[" + "#" * filled + "." * (20 - filled) + "]"
-            live.update(Text(f"  {bar}  {remaining:.1f}s remaining", style="yellow"))
-            if proc.poll() is not None or remaining <= 0:
-                break
-            time.sleep(0.1)
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
-    proc.wait()
+        with Live(console=console, refresh_per_second=4) as live:
+            start = time.time()
+            while True:
+                elapsed = time.time() - start
+                remaining = max(0.0, duration - elapsed)
+                filled = int((elapsed / duration) * 20)
+                bar = "[" + "#" * filled + "." * (20 - filled) + "]"
+                live.update(Text(f"  {bar}  {remaining:.1f}s remaining", style="yellow"))
+                if proc.poll() is not None or remaining <= 0:
+                    break
+                time.sleep(0.1)
 
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"FFmpeg recording failed (exit {proc.returncode}). "
-            "Check that a microphone is connected and accessible."
-        )
+        proc.wait()
+        last_stderr = proc.stderr.read()
 
-    console.print(f"[green]Snippet saved:[/green] {out_path}")
-    return out_path
+        if proc.returncode == 0:
+            console.print(f"[green]Snippet saved:[/green] {out_path}")
+            return out_path
+
+    raise RuntimeError(
+        f"FFmpeg recording failed (exit {proc.returncode}). "
+        "Check that a microphone is connected and accessible.\n"
+        + last_stderr.decode(errors="replace")
+    )
