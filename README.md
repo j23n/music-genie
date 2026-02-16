@@ -75,3 +75,19 @@ record_duration = 10
 ## Data storage
 
 Snippets and their metadata are stored in `~/.local/share/music-genie/snippets/` as `.wav` + `.json` pairs.
+
+## AI disclaimer
+
+This tool was built with Claude Code, following [my AI policy](https://j23n.com/public/posts/2026/my-ai-policy).
+
+### Tools
+- Claude Code (Anthropic) — primary development assistant
+
+### Usage
+- **Architecture & design**: Human-driven
+- **Implementation**: AI-collaborative (human-directed, AI-written, human-reviewed)
+- **Tests**: N/A
+- **Documentation**: AI-generated with human review
+
+### Process
+AI agents propose changes as a PR, which are reviewed and merged by me. I try to make interactions transparent in the relevant issues or proposed patches. AI-authored commits are tagged with `Co-Authored-By` in the git history.

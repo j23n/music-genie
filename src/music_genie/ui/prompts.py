@@ -12,16 +12,18 @@ def prompt_pick(results: list[VideoResult]) -> VideoResult | None:
     n = len(results)
 
     def _validate(val: str) -> bool | str:
-        if val.strip().isdigit() and 0 <= int(val.strip()) <= n:
+        if (val.strip().isdigit() and 0 <= int(val.strip()) <= n) or val == "":
             return True
         return f"Enter a number between 1 and {n}, or 0 to cancel"
 
     answer = questionary.text(
-        f"Pick [1-{n}] or 0 to cancel:",
+        f"Pick [1-{n}] or 0 to cancel [1]:",
         validate=_validate,
     ).ask()
-
-    if answer is None or answer.strip() == "0":
+    
+    if answer is None or answer == "":
+        return results[0]
+    if answer.strip() == "0":
         return None
     return results[int(answer.strip()) - 1]
 

@@ -1,7 +1,7 @@
 [project]
 name = "music-genie"
 description = "Search YouTube for music, identify songs, download as tagged MP3s"
-version = "0.1.0"
+version = "0.1.1"
 license = { text = "MIT" }
 authors = [
     { name = "j23n", email = "oss@j23n.com" }
