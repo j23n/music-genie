@@ -76,18 +76,37 @@ record_duration = 10
 
 Snippets and their metadata are stored in `~/.local/share/music-genie/snippets/` as `.wav` + `.json` pairs.
 
-## AI disclaimer
+## 🤖 AI Disclaimer
 
-This tool was built with Claude Code, following [my AI policy](https://j23n.com/public/posts/2026/my-ai-policy).
+This project uses AI-assisted development tools. See the [AI usage policy](https://j23n.com/public/posts/2026/my-ai-policy) for details.
 
-### Tools
-- Claude Code (Anthropic) — primary development assistant
+**Tools**
 
-### Usage
-- **Architecture & design**: Human-driven
-- **Implementation**: AI-collaborative (human-directed, AI-written, human-reviewed)
-- **Tests**: N/A
-- **Documentation**: AI-generated with human review
+- Claude Code (Anthropic) · `claude-sonnet-4-6` · Agentic
+
+### Contribution Profile
+
+```
+Phase                               Human│ AI
+─────────────────────────────────────────┼───────────────
+Requirements & Scope       85%   ████████│░░          15%
+Architecture & Design      50%      █████│░░░░░       50%
+Implementation              5%           │░░░░░░░░░░  95%
+Testing                   n/a
+Documentation               5%           │░░░░░░░░░░  95%
+```
+
+**Oversight**: Autonomous
+
+AI drives end-to-end; human reviews final output only.
 
 ### Process
-AI agents propose changes as a PR, which are reviewed and merged by me. I try to make interactions transparent in the relevant issues or proposed patches. AI-authored commits are tagged with `Co-Authored-By` in the git history.
+
+AI agent operated autonomously across multi-step tasks. Human reviewed diffs, resolved conflicts, and approved merges.
+
+### Accountability
+
+The human author(s) are solely responsible for the content, accuracy, and fitness-for-purpose of this project.
+
+---
+*Last updated: 2026-02-20 · Generated with [ai-disclaimer](https://github.com/j23n/ai-disclaimer)*
