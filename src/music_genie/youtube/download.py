@@ -6,6 +6,8 @@ import imageio_ffmpeg
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn
 from yt_dlp import YoutubeDL
 
+from music_genie.ui.theme import console
+
 
 def download_audio(url: str, output_dir: str | Path, fmt: str = "mp3", quality: int = 192) -> Path:
     output_dir = Path(output_dir)
@@ -18,6 +20,7 @@ def download_audio(url: str, output_dir: str | Path, fmt: str = "mp3", quality: 
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         TimeRemainingColumn(),
+        console=console,
         transient=True,
     ) as progress:
         task_id = progress.add_task("Downloading...", total=100)

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from rich.console import Console
 from rich.table import Table
 
+from music_genie.ui.theme import console
 from music_genie.youtube.search import VideoResult
-
-console = Console()
 
 
 def _fmt_duration(seconds: int | None) -> str:
@@ -30,11 +28,11 @@ def _fmt_views(count: int | None) -> str:
 
 def show_results(results: list[VideoResult]) -> None:
     table = Table(title="Search Results", show_lines=False)
-    table.add_column("#", style="bold cyan", width=3, justify="right")
-    table.add_column("Title", style="white", max_width=60)
-    table.add_column("Uploader", style="green", max_width=25)
-    table.add_column("Duration", style="yellow", width=9, justify="right")
-    table.add_column("Views", style="blue", width=8, justify="right")
+    table.add_column("#", style="col.index", width=3, justify="right")
+    table.add_column("Title", style="col.title", max_width=60)
+    table.add_column("Uploader", style="col.uploader", max_width=25)
+    table.add_column("Duration", style="col.duration", width=9, justify="right")
+    table.add_column("Views", style="col.views", width=8, justify="right")
 
     for i, r in enumerate(results, start=1):
         table.add_row(
