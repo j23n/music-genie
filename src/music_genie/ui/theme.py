@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import os
+import select
+import sys
+import termios
+import tty
 
 from rich.console import Console
 from rich.style import Style
@@ -60,13 +64,76 @@ _FLEXOKI = {
 }
 
 
+def _perceived_lightness(r: int, g: int, b: int) -> float:
+    """Return perceptual lightness (0 = black, 1 = white) using sRGB luminance."""
+    def linearize(c: int) -> float:
+        s = c / 65535  # OSC 11 reports 16-bit components
+        return s / 12.92 if s <= 0.04045 else ((s + 0.055) / 1.055) ** 2.4
+
+    lum = 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+    return lum
+
+
+def _query_terminal_bg() -> str | None:
+    """Ask the terminal for its background colour via OSC 11.
+
+    Returns ``"dark"`` or ``"light"`` if the terminal responds, otherwise
+    ``None``. Works on virtually all modern terminals (xterm, iTerm2, kitty,
+    WezTerm, Alacritty, GNOME Terminal / VTE, Windows Terminal, etc.).
+    """
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return None
+
+    try:
+        fd = sys.stdin.fileno()
+        old_attrs = termios.tcgetattr(fd)
+    except (termios.error, ValueError):
+        return None
+
+    try:
+        tty.setraw(fd)
+        # OSC 11 = query background colour; ST = ESC backslash
+        sys.stdout.write("\033]11;?\033\\")
+        sys.stdout.flush()
+
+        # Wait up to 100 ms for the terminal to respond
+        if not select.select([fd], [], [], 0.1)[0]:
+            return None
+
+        response = b""
+        while select.select([fd], [], [], 0.05)[0]:
+            response += os.read(fd, 128)
+
+        # Response looks like: ESC ] 11 ; rgb:RRRR/GGGG/BBBB ST
+        text = response.decode("latin-1")
+        if "rgb:" not in text:
+            return None
+
+        rgb_part = text.split("rgb:", 1)[1]
+        # Strip any trailing ST (BEL \x07, or ESC \ )
+        for term in ("\x07", "\x1b\\", "\x1b"):
+            rgb_part = rgb_part.split(term, 1)[0]
+
+        parts = rgb_part.strip().split("/")
+        if len(parts) != 3:
+            return None
+
+        r, g, b = (int(c, 16) for c in parts)
+        return "light" if _perceived_lightness(r, g, b) > 0.5 else "dark"
+    except (OSError, ValueError):
+        return None
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, old_attrs)
+
+
 def _detect_scheme() -> str:
     """Detect whether the terminal is dark or light.
 
     Checks (in order):
     1. ``MUSIC_GENIE_THEME`` env var (``dark`` / ``light``)
     2. ``COLORFGBG`` env var (``<fg>;<bg>`` – many terminals set this)
-    3. Falls back to ``dark``.
+    3. OSC 11 query to the terminal for its actual background colour
+    4. Falls back to ``dark``.
     """
     explicit = os.environ.get("MUSIC_GENIE_THEME", "").lower()
     if explicit in ("dark", "light"):
@@ -80,6 +147,10 @@ def _detect_scheme() -> str:
             return "light" if bg > 8 else "dark"
         except ValueError:
             pass
+
+    osc_result = _query_terminal_bg()
+    if osc_result:
+        return osc_result
 
     return "dark"
 
