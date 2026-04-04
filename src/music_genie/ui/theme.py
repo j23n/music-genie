@@ -10,10 +10,15 @@ from rich.theme import Theme
 
 # ---------------------------------------------------------------------------
 # Flexoki palette  (https://stephango.com/flexoki)
+#
+# The base scale mirrors itself: paper <-> black, base-50 <-> base-950, etc.
+# Accent colours use the -400 variants in dark mode (brighter) and
+# -600 variants in light mode (deeper) for proper contrast.
 # ---------------------------------------------------------------------------
 
 _FLEXOKI = {
     "dark": {
+        # Accents (-400 variants for dark backgrounds)
         "red": "#D14D41",
         "orange": "#DA702C",
         "yellow": "#D0A215",
@@ -22,14 +27,18 @@ _FLEXOKI = {
         "blue": "#4385BE",
         "purple": "#8B7EC8",
         "magenta": "#CE5D97",
-        "tx": "#CECDC3",
-        "tx2": "#878580",
-        "ui": "#343331",
-        "ui2": "#575653",
-        "bg": "#100F0F",
-        "bg2": "#1C1B1A",
+        # Base scale
+        "tx": "#FFFCF0",       # paper  – primary text
+        "tx2": "#878580",       # base-500 – secondary text
+        "tx3": "#6F6E69",       # base-600 – muted text
+        "ui": "#403E3C",        # base-800 – border
+        "ui2": "#575653",       # base-700 – strong border
+        "ui3": "#343331",       # base-850 – subtle border / highlight
+        "bg": "#100F0F",        # black – background
+        "bg2": "#1C1B1A",       # base-950 – surface
     },
     "light": {
+        # Accents (-600 variants for light backgrounds)
         "red": "#AF3029",
         "orange": "#BC5215",
         "yellow": "#AD8301",
@@ -38,12 +47,15 @@ _FLEXOKI = {
         "blue": "#205EA6",
         "purple": "#5E409D",
         "magenta": "#A02F6F",
-        "tx": "#100F0F",
-        "tx2": "#6F6E69",
-        "ui": "#E6E4D9",
-        "ui2": "#DAD8CE",
-        "bg": "#FFFCF0",
-        "bg2": "#F2F0E5",
+        # Base scale (mirrored)
+        "tx": "#100F0F",        # black – primary text
+        "tx2": "#878580",       # base-500 – secondary text
+        "tx3": "#9F9D96",       # base-400 – muted text
+        "ui": "#CECDC3",        # base-200 – border
+        "ui2": "#B7B5AC",       # base-300 – strong border
+        "ui3": "#E6E4D9",       # base-100 – subtle border / highlight
+        "bg": "#FFFCF0",        # paper – background
+        "bg2": "#F2F0E5",       # base-50 – surface
     },
 }
 
@@ -83,7 +95,7 @@ def _build_theme(scheme: str) -> Theme:
             "warning": Style(color=p["yellow"]),
             "error": Style(color=p["red"]),
             "accent": Style(color=p["purple"]),
-            "muted": Style(color=p["tx2"]),
+            "muted": Style(color=p["tx3"]),
             "text": Style(color=p["tx"]),
             # Table columns
             "col.index": Style(color=p["cyan"], bold=True),
@@ -91,7 +103,7 @@ def _build_theme(scheme: str) -> Theme:
             "col.uploader": Style(color=p["green"]),
             "col.duration": Style(color=p["yellow"]),
             "col.views": Style(color=p["blue"]),
-            "col.id": Style(color=p["tx2"]),
+            "col.id": Style(color=p["tx3"]),
             "col.status": Style(color=p["yellow"]),
             "col.file": Style(color=p["blue"]),
             "col.time": Style(color=p["tx"]),
@@ -102,4 +114,7 @@ def _build_theme(scheme: str) -> Theme:
 
 
 scheme = _detect_scheme()
-console = Console(theme=_build_theme(scheme))
+console = Console(
+    theme=_build_theme(scheme),
+    style=Style(color=_FLEXOKI[scheme]["tx"], bgcolor=_FLEXOKI[scheme]["bg"]),
+)
