@@ -21,7 +21,9 @@ def prompt_pick(results: list[VideoResult]) -> VideoResult | None:
         validate=_validate,
     ).ask()
     
-    if answer is None or answer == "":
+    if answer is None:
+        return None
+    if answer == "":
         return results[0]
     if answer.strip() == "0":
         return None
