@@ -76,6 +76,12 @@ def _search_and_download(query: str, meta: TrackMeta | None = None) -> None:
     artist_dir = settings.output_dir / _safe(meta.artist)
     artist_dir.mkdir(parents=True, exist_ok=True)
     final_path = artist_dir / f"{_safe(meta.title)}{raw_path.suffix}"
+
+    if final_path.exists():
+        if not prompt_confirm(f"'{final_path}' already exists. Overwrite?"):
+            raw_path.unlink(missing_ok=True)
+            console.print("[yellow]Skipped — existing file kept.[/yellow]")
+            return
     raw_path.rename(final_path)
 
     with Status("[cyan]Embedding tags...[/cyan]", spinner="dots"):
