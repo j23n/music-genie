@@ -118,7 +118,8 @@ def _query_terminal_bg() -> str | None:
         if len(parts) != 3:
             return None
 
-        r, g, b = (int(c, 16) for c in parts)
+        # Normalize to 16-bit range regardless of terminal precision (2 or 4 hex digits)
+        r, g, b = (int(c, 16) * 65535 // ((16 ** len(c)) - 1) for c in parts)
         return "light" if _perceived_lightness(r, g, b) > 0.5 else "dark"
     except (OSError, ValueError):
         return None
