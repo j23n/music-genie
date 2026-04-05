@@ -15,7 +15,7 @@ from music_genie.youtube.download import download_audio
 from music_genie.audio.record import record_snippet
 from music_genie.audio.identify import is_online, identify_song_sync
 from music_genie.queue.store import save_snippet, list_pending, update_snippet, delete_snippet
-from music_genie.ui.prompts import prompt_pick, prompt_confirm
+from music_genie.ui.prompts import prompt_pick, prompt_confirm, prompt_collision
 from music_genie.metadata.lookup import TrackMeta, mb_lookup, parse_video_title
 from music_genie.metadata.embed import embed
 
@@ -76,6 +76,22 @@ def _search_and_download(query: str, meta: TrackMeta | None = None) -> None:
     artist_dir = settings.output_dir / _safe(meta.artist)
     artist_dir.mkdir(parents=True, exist_ok=True)
     final_path = artist_dir / f"{_safe(meta.title)}{raw_path.suffix}"
+
+    if final_path.exists():
+        choice = prompt_collision(str(final_path))
+        if choice == "abort":
+            raw_path.unlink(missing_ok=True)
+            console.print("[yellow]Skipped — existing file kept.[/yellow]")
+            return
+        if choice == "rename":
+            stem = final_path.stem
+            suffix = final_path.suffix
+            n = 1
+            while final_path.exists():
+                final_path = artist_dir / f"{stem} ({n}){suffix}"
+                n += 1
+        elif choice == "overwrite":
+            final_path.unlink(missing_ok=True)
     raw_path.rename(final_path)
 
     with Status("[cyan]Embedding tags...[/cyan]", spinner="dots"):
