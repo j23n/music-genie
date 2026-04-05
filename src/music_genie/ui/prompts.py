@@ -21,7 +21,9 @@ def prompt_pick(results: list[VideoResult]) -> VideoResult | None:
         validate=_validate,
     ).ask()
     
-    if answer is None or answer == "":
+    if answer is None:
+        return None
+    if answer == "":
         return results[0]
     if answer.strip() == "0":
         return None
@@ -31,3 +33,16 @@ def prompt_pick(results: list[VideoResult]) -> VideoResult | None:
 def prompt_confirm(msg: str) -> bool:
     result = questionary.confirm(msg).ask()
     return bool(result)
+
+
+def prompt_collision(path: str) -> str:
+    """Ask the user how to handle an existing file. Returns 'overwrite', 'rename', or 'abort'."""
+    result = questionary.select(
+        f"'{path}' already exists.",
+        choices=[
+            questionary.Choice("Overwrite existing file", value="overwrite"),
+            questionary.Choice("Save with a new name", value="rename"),
+            questionary.Choice("Abort (keep existing)", value="abort"),
+        ],
+    ).ask()
+    return result or "abort"
