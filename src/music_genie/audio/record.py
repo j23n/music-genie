@@ -9,13 +9,11 @@ from pathlib import Path
 
 import shutil
 
-from rich.console import Console
 from rich.live import Live
 from rich.text import Text
 
 from music_genie.config import snippets_dir
-
-console = Console()
+from music_genie.ui.theme import console
 
 
 def _input_candidates() -> list[list[str]]:
@@ -57,7 +55,7 @@ def record_snippet(duration: int = 8, sample_rate: int = 44100) -> Path:
     out_path = _make_snippet_path()
     ffmpeg = _system_ffmpeg()
 
-    console.print(f"[bold cyan]Recording for {duration} seconds...[/bold cyan]")
+    console.print(f"[primary]Recording for {duration} seconds...[/primary]")
 
     last_stderr = b""
     for input_args in _input_candidates():
@@ -80,7 +78,7 @@ def record_snippet(duration: int = 8, sample_rate: int = 44100) -> Path:
                 remaining = max(0.0, duration - elapsed)
                 filled = int((elapsed / duration) * 20)
                 bar = "[" + "#" * filled + "." * (20 - filled) + "]"
-                live.update(Text(f"  {bar}  {remaining:.1f}s remaining", style="yellow"))
+                live.update(Text(f"  {bar}  {remaining:.1f}s remaining", style="bar"))
                 if proc.poll() is not None or remaining <= 0:
                     break
                 time.sleep(0.1)
@@ -89,7 +87,7 @@ def record_snippet(duration: int = 8, sample_rate: int = 44100) -> Path:
         last_stderr = proc.stderr.read()
 
         if proc.returncode == 0:
-            console.print(f"[green]Snippet saved:[/green] {out_path}")
+            console.print(f"[success]Snippet saved:[/success] {out_path}")
             return out_path
 
     raise RuntimeError(
