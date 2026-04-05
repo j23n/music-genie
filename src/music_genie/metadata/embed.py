@@ -3,9 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import httpx
-from mutagen.id3 import APIC, ID3, TALB, TDRC, TIT2, TPE1, ID3NoHeaderError
+from mutagen.id3 import APIC, ID3, SYLT, TALB, TDRC, TIT2, TPE1, USLT, ID3NoHeaderError
 
 from music_genie.metadata.lookup import TrackMeta
+from music_genie.metadata.lyrics import fetch_synced_lyrics
 
 
 def _fetch_cover(meta: TrackMeta) -> bytes | None:
@@ -56,5 +57,13 @@ def embed(path: Path, meta: TrackMeta) -> None:
             desc="Cover",
             data=cover_data,
         )
+
+    synced, plain = fetch_synced_lyrics(meta.artist, meta.title, meta.album)
+    if synced:
+        tags["SYLT::eng"] = SYLT(
+            encoding=3, lang="eng", format=2, type=1, text=synced
+        )
+    if plain:
+        tags["USLT::eng"] = USLT(encoding=3, lang="eng", desc="", text=plain)
 
     tags.save(str(path))
