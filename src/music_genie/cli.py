@@ -90,6 +90,8 @@ def _search_and_download(query: str, meta: TrackMeta | None = None) -> None:
             while final_path.exists():
                 final_path = artist_dir / f"{stem} ({n}){suffix}"
                 n += 1
+        elif choice == "overwrite":
+            final_path.unlink(missing_ok=True)
     raw_path.rename(final_path)
 
     with Status("[cyan]Embedding tags...[/cyan]", spinner="dots"):
