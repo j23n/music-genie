@@ -18,6 +18,8 @@ from music_genie.ui.prompts import prompt_pick, prompt_confirm, prompt_collision
 from music_genie.ui.theme import console
 from music_genie.metadata.lookup import TrackMeta, mb_lookup, parse_video_title
 from music_genie.metadata.embed import embed
+from music_genie.metadata.lyrics import fetch_lyrics
+from mutagen.id3 import ID3, ID3NoHeaderError
 
 app = typer.Typer(help="music-genie: search, identify, and download music.")
 
@@ -92,6 +94,9 @@ def _search_and_download(query: str, meta: TrackMeta | None = None) -> None:
         elif choice == "overwrite":
             final_path.unlink(missing_ok=True)
     raw_path.rename(final_path)
+
+    with Status("[secondary]Fetching lyrics...[/secondary]", console=console, spinner="dots"):
+        meta.lyrics = fetch_lyrics(meta.artist, meta.title)
 
     with Status("[secondary]Embedding tags...[/secondary]", console=console, spinner="dots"):
         embed(final_path, meta)
@@ -233,6 +238,77 @@ def process() -> None:
         f"  Identified: [success]{identified_count}[/success]  "
         f"Downloaded: [success]{downloaded_count}[/success]  "
         f"Skipped: [warning]{skipped_count}[/warning]"
+    )
+
+
+@app.command()
+def tag(
+    folder: Annotated[Path, typer.Argument(help="Folder containing audio files to tag")],
+    force: Annotated[bool, typer.Option("--force", help="Overwrite existing tags")] = False,
+) -> None:
+    """Update tags, artwork, and lyrics for audio files in a folder."""
+    if not folder.is_dir():
+        console.print(f"[error]Not a directory: {folder}[/error]")
+        raise typer.Exit(1)
+
+    files = sorted(folder.rglob("*.mp3"))
+    if not files:
+        console.print("[warning]No MP3 files found.[/warning]")
+        return
+
+    console.print(f"[text]Scanning[/text] [bold]{folder}[/bold] — {len(files)} file(s)\n")
+
+    tagged = 0
+    skipped = 0
+
+    for i, path in enumerate(files, 1):
+        label = f"  [{i}/{len(files)}] [muted]{path.name}[/muted]"
+
+        # Read existing tags
+        try:
+            existing = ID3(str(path))
+        except ID3NoHeaderError:
+            existing = {}
+
+        artist = str(existing["TPE1"]) if "TPE1" in existing else None
+        title = str(existing["TIT2"]) if "TIT2" in existing else None
+
+        # Fall back to filename parsing
+        if not (artist and title):
+            stem = path.stem
+            if " - " in stem:
+                parts = stem.split(" - ", 1)
+                artist, title = parts[0].strip(), parts[1].strip()
+            else:
+                title = stem
+                artist = None
+
+        if not title:
+            console.print(f"{label}  [warning]skipped — can't determine title[/warning]")
+            skipped += 1
+            continue
+
+        # MusicBrainz lookup
+        with Status(f"{label}  looking up...", console=console, spinner="dots"):
+            mb = mb_lookup(artist or "", title) if artist else None
+
+        if mb:
+            meta = mb
+        else:
+            meta = TrackMeta(artist=artist or path.stem, title=title)
+
+        # Lyrics
+        with Status(f"{label}  fetching lyrics...", console=console, spinner="dots"):
+            meta.lyrics = fetch_lyrics(meta.artist, meta.title)
+
+        embed(path, meta, force=force)
+
+        console.print(f"{label}  [success]✓ tagged[/success]")
+        tagged += 1
+
+    console.print(
+        f"\n  Tagged: [success]{tagged}[/success]  "
+        f"Skipped: [warning]{skipped}[/warning]"
     )
 
 

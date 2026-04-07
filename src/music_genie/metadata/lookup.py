@@ -16,6 +16,7 @@ class TrackMeta:
     year: str | None = None
     mb_release_id: str | None = None
     cover_url: str | None = None  # fallback URL (e.g. from Shazam)
+    lyrics: str | None = None  # LRC text (synced) or plain text
 
     @property
     def query(self) -> str:
