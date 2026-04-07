@@ -241,10 +241,25 @@ def process() -> None:
     )
 
 
+def _is_fully_tagged(tags: dict) -> bool:
+    """Return True if all fields we manage are already present."""
+    has_lyrics = any(k.startswith("USLT") or k.startswith("SYLT") for k in tags)
+    has_artwork = any(k.startswith("APIC") for k in tags)
+    return (
+        "TIT2" in tags
+        and "TPE1" in tags
+        and "TALB" in tags
+        and "TDRC" in tags
+        and has_artwork
+        and has_lyrics
+    )
+
+
 @app.command()
 def tag(
     folder: Annotated[Path, typer.Argument(help="Folder containing audio files to tag")],
     force: Annotated[bool, typer.Option("--force", help="Overwrite existing tags")] = False,
+    skip_tagged: Annotated[bool, typer.Option("--skip-tagged", help="Skip files that already have all tags")] = False,
 ) -> None:
     """Update tags, artwork, and lyrics for audio files in a folder."""
     if not folder.is_dir():
@@ -260,6 +275,7 @@ def tag(
 
     tagged = 0
     skipped = 0
+    already_tagged = 0
 
     for i, path in enumerate(files, 1):
         label = f"  [{i}/{len(files)}] [muted]{path.name}[/muted]"
@@ -269,6 +285,11 @@ def tag(
             existing = ID3(str(path))
         except ID3NoHeaderError:
             existing = {}
+
+        if skip_tagged and _is_fully_tagged(existing):
+            console.print(f"{label}  [muted]~ already tagged[/muted]")
+            already_tagged += 1
+            continue
 
         artist = str(existing["TPE1"]) if "TPE1" in existing else None
         title = str(existing["TIT2"]) if "TIT2" in existing else None
@@ -306,10 +327,13 @@ def tag(
         console.print(f"{label}  [success]✓ tagged[/success]")
         tagged += 1
 
-    console.print(
-        f"\n  Tagged: [success]{tagged}[/success]  "
-        f"Skipped: [warning]{skipped}[/warning]"
-    )
+    parts = [
+        f"Tagged: [success]{tagged}[/success]",
+        f"Skipped: [warning]{skipped}[/warning]",
+    ]
+    if skip_tagged:
+        parts.append(f"Already tagged: [muted]{already_tagged}[/muted]")
+    console.print("\n  " + "  ".join(parts))
 
 
 if __name__ == "__main__":
