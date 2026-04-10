@@ -23,6 +23,34 @@ class TrackMeta:
         return f"{self.artist} - {self.title}"
 
 
+def _pick_best_release(releases: list[dict]) -> dict:
+    """Choose the most relevant release, preferring original albums over compilations."""
+
+    def _score(rel: dict) -> tuple[int, str]:
+        rg = rel.get("release-group", {})
+        primary = rg.get("type", "").lower()
+        secondary = [t.lower() for t in rg.get("secondary-type-list", [])]
+
+        # Compilations / soundtracks / DJ-mixes etc. are almost never what we want.
+        is_compilation = "compilation" in secondary or primary == "compilation"
+
+        if primary == "album" and not is_compilation:
+            rank = 0  # best
+        elif primary in ("single", "ep") and not is_compilation:
+            rank = 1
+        elif primary == "album" and is_compilation:
+            rank = 2
+        else:
+            rank = 3  # broadcast, other, or missing type
+
+        # Within the same rank, prefer the earliest release date so we get
+        # the original pressing rather than a re-issue.
+        date = rel.get("date", "") or ""
+        return (rank, date)
+
+    return min(releases, key=_score)
+
+
 def mb_lookup(artist: str, title: str) -> TrackMeta | None:
     try:
         result = musicbrainzngs.search_recordings(
@@ -43,13 +71,13 @@ def mb_lookup(artist: str, title: str) -> TrackMeta | None:
     if credits and isinstance(credits[0], dict):
         canon_artist = credits[0].get("artist", {}).get("name", artist)
 
-    # Album + year from first release
+    # Album + year – prefer the artist's own album over compilations
     album: str | None = None
     year: str | None = None
     mb_release_id: str | None = None
     releases = best.get("release-list", [])
     if releases:
-        rel = releases[0]
+        rel = _pick_best_release(releases)
         album = rel.get("title")
         date = rel.get("date", "")
         year = date[:4] if date else None
