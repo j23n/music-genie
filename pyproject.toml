@@ -1,13 +1,13 @@
 [project]
 name = "music-genie"
 description = "Search YouTube for music, identify songs, download as tagged MP3s"
-version = "0.3.0"
+version = "0.4.0"
 license = { text = "MIT" }
 authors = [
     { name = "j23n", email = "oss@j23n.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "typer>=0.12",
     "yt-dlp>=2024.1",
@@ -30,5 +30,5 @@ music-genie = "music_genie.cli:app"
 mg = "music_genie.cli:app"
 
 [build-system]
-requires = ["uv_build>=0.10.2,<0.11"]
+requires = ["uv_build>=0.10.2,<0.12"]
 build-backend = "uv_build"
