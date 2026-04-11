@@ -46,6 +46,12 @@ mg process
 ```
 Attempts to identify each pending snippet and prompts to search and download. Unidentifiable snippets can be deleted.
 
+**Tag existing MP3 files:**
+```
+mg tag ~/Music
+```
+Scans a folder for MP3 files and enriches them with metadata (artist, album, year, cover art, lyrics) sourced from MusicBrainz and LRCLib. Pass `--skip-tagged` to skip files that already have complete tags, or `--force` to overwrite existing tags.
+
 ## Output layout
 
 Files are saved to `~/Music/<artist>/<title>.mp3` by default.
